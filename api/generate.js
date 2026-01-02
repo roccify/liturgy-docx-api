@@ -11,13 +11,11 @@ function createLiturgyDocument(data) {
   const { title, subtitle, sections } = data;
   
   const children = [
-    // Title
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 400 },
       children: [new TextRun({ text: title, bold: true, size: 32 })]
     }),
-    // Subtitle (date)
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 400 },
@@ -25,9 +23,7 @@ function createLiturgyDocument(data) {
     })
   ];
 
-  // Add each liturgy section
   sections.forEach(section => {
-    // Section header (INTROITUS, ORATIO, etc.)
     children.push(
       new Paragraph({
         alignment: AlignmentType.CENTER,
@@ -36,10 +32,8 @@ function createLiturgyDocument(data) {
       })
     );
 
-    // Create table with Latin and Slovenian columns
     const rows = [];
     
-    // Reference row (if exists)
     if (section.latin.reference || section.slovenian.reference) {
       rows.push(
         new TableRow({
@@ -79,7 +73,6 @@ function createLiturgyDocument(data) {
       );
     }
 
-    // Text row
     rows.push(
       new TableRow({
         children: [
@@ -146,7 +139,6 @@ function createLiturgyDocument(data) {
 }
 
 module.exports = async (req, res) => {
-  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -162,40 +154,25 @@ module.exports = async (req, res) => {
   try {
     const data = req.body;
     
-    // Validate input
     if (!data || !data.title || !data.sections) {
       return res.status(400).json({ 
-        error: 'Invalid request. Required: title, subtitle, sections',
-        example: {
-          title: 'LITURGY TITLE',
-          subtitle: '01.01.2026, ponedeljek',
-          filename: 'liturgy.docx',
-          sections: [
-            {
-              name: 'INTROITUS',
-              latin: { reference: 'Is 45:8', text: 'Latin text...' },
-              slovenian: { reference: 'Iz 45,8', text: 'Slovenski tekst...' }
-            }
-          ]
-        }
+        error: 'Invalid request',
+        required: ['title', 'subtitle', 'filename', 'sections']
       });
     }
 
-    // Generate document
     const doc = createLiturgyDocument(data);
     const buffer = await Packer.toBuffer(doc);
 
-    // Send as file
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition', `attachment; filename="${data.filename || 'liturgy.docx'}"`);
     res.send(buffer);
 
   } catch (error) {
-    console.error('Error generating document:', error);
+    console.error('Error:', error);
     res.status(500).json({ 
       error: 'Failed to generate document',
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      message: error.message
     });
   }
 };
