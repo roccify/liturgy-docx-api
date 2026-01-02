@@ -1,0 +1,16 @@
+{
+  "name": "liturgy-docx-generator",
+  "version": "1.0.0",
+  "description": "Generates liturgy Word documents with Latin-Slovenian columns",
+  "main": "api/generate.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel"
+  },
+  "dependencies": {
+    "docx": "^8.5.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
