@@ -1,4 +1,4 @@
-const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, AlignmentType, WidthType, BorderStyle } = require('docx');
+const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, AlignmentType, WidthType, BorderStyle, HeightRule } = require('docx');
 
 const cellBorders = {
   top: { style: BorderStyle.NONE, size: 0 },
@@ -7,33 +7,35 @@ const cellBorders = {
   right: { style: BorderStyle.NONE, size: 0 }
 };
 
-function createTextRunsWithBreaks(text) {
-  // Split text by newlines and create TextRun with breaks
-  const lines = text.split('\n');
-  const runs = [];
+function createParagraphsFromText(text) {
+  // Split by double newline (paragraphs) and single newline (lines within paragraph)
+  const paragraphs = [];
+  const blocks = text.split('\n\n');
   
-  lines.forEach((line, index) => {
-    if (line.trim()) {
-      runs.push(new TextRun({ text: line, size: 24 }));
-    }
-    // Add break after each line except the last
-    if (index < lines.length - 1) {
-      runs.push(new TextRun({ break: 1 }));
+  blocks.forEach(block => {
+    const lines = block.split('\n').filter(l => l.trim());
+    if (lines.length > 0) {
+      const runs = [];
+      lines.forEach((line, idx) => {
+        runs.push(new TextRun({ text: line, size: 24 }));
+        if (idx < lines.length - 1) {
+          runs.push(new TextRun({ break: 1 }));
+        }
+      });
+      paragraphs.push(new Paragraph({
+        spacing: { after: 100 },
+        children: runs
+      }));
     }
   });
   
-  return runs;
+  return paragraphs.length > 0 ? paragraphs : [new Paragraph({ children: [new TextRun({ text: text, size: 24 })] })];
 }
 
 function createLiturgyDocument(data) {
-  const { title, subtitle, sections } = data;
+  const { subtitle, sections } = data;
   
   const children = [
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 400 },
-      children: [new TextRun({ text: title, bold: true, size: 32 })]
-    }),
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 400 },
@@ -56,17 +58,19 @@ function createLiturgyDocument(data) {
     if (section.latin.reference || section.slovenian.reference) {
       rows.push(
         new TableRow({
+          height: { value: 300, rule: HeightRule.ATLEAST },
           children: [
             new TableCell({
               borders: cellBorders,
               width: { size: 50, type: WidthType.PERCENTAGE },
               children: [
                 new Paragraph({
+                  spacing: { after: 200 },
                   children: [
                     new TextRun({
                       text: section.latin.reference || '',
                       italics: true,
-                      size: 20
+                      size: 24
                     })
                   ]
                 })
@@ -77,11 +81,12 @@ function createLiturgyDocument(data) {
               width: { size: 50, type: WidthType.PERCENTAGE },
               children: [
                 new Paragraph({
+                  spacing: { after: 200 },
                   children: [
                     new TextRun({
                       text: section.slovenian.reference || '',
                       italics: true,
-                      size: 20
+                      size: 24
                     })
                   ]
                 })
@@ -92,29 +97,21 @@ function createLiturgyDocument(data) {
       );
     }
 
-    // Text row with line breaks preserved
+    // Text row
     rows.push(
       new TableRow({
         children: [
           new TableCell({
             borders: cellBorders,
             width: { size: 50, type: WidthType.PERCENTAGE },
-            children: [
-              new Paragraph({
-                spacing: { after: 100 },
-                children: createTextRunsWithBreaks(section.latin.text || '')
-              })
-            ]
+            verticalAlign: AlignmentType.TOP,
+            children: createParagraphsFromText(section.latin.text || '')
           }),
           new TableCell({
             borders: cellBorders,
             width: { size: 50, type: WidthType.PERCENTAGE },
-            children: [
-              new Paragraph({
-                spacing: { after: 100 },
-                children: createTextRunsWithBreaks(section.slovenian.text || '')
-              })
-            ]
+            verticalAlign: AlignmentType.TOP,
+            children: createParagraphsFromText(section.slovenian.text || '')
           })
         ]
       })
@@ -164,10 +161,10 @@ module.exports = async (req, res) => {
   try {
     const data = req.body;
     
-    if (!data || !data.title || !data.sections) {
+    if (!data || !data.subtitle || !data.sections) {
       return res.status(400).json({ 
         error: 'Invalid request',
-        required: ['title', 'subtitle', 'filename', 'sections']
+        required: ['subtitle', 'filename', 'sections']
       });
     }
 
