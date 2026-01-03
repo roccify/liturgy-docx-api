@@ -69,7 +69,6 @@ function createLiturgyDocument(data) {
                   children: [
                     new TextRun({
                       text: section.latin.reference || '',
-                      italics: true,
                       size: 24
                     })
                   ]
@@ -85,7 +84,6 @@ function createLiturgyDocument(data) {
                   children: [
                     new TextRun({
                       text: section.slovenian.reference || '',
-                      italics: true,
                       size: 24
                     })
                   ]
