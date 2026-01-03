@@ -7,6 +7,24 @@ const cellBorders = {
   right: { style: BorderStyle.NONE, size: 0 }
 };
 
+function createTextRunsWithBreaks(text) {
+  // Split text by newlines and create TextRun with breaks
+  const lines = text.split('\n');
+  const runs = [];
+  
+  lines.forEach((line, index) => {
+    if (line.trim()) {
+      runs.push(new TextRun({ text: line, size: 24 }));
+    }
+    // Add break after each line except the last
+    if (index < lines.length - 1) {
+      runs.push(new TextRun({ break: 1 }));
+    }
+  });
+  
+  return runs;
+}
+
 function createLiturgyDocument(data) {
   const { title, subtitle, sections } = data;
   
@@ -34,6 +52,7 @@ function createLiturgyDocument(data) {
 
     const rows = [];
     
+    // Reference row if exists
     if (section.latin.reference || section.slovenian.reference) {
       rows.push(
         new TableRow({
@@ -73,6 +92,7 @@ function createLiturgyDocument(data) {
       );
     }
 
+    // Text row with line breaks preserved
     rows.push(
       new TableRow({
         children: [
@@ -82,12 +102,7 @@ function createLiturgyDocument(data) {
             children: [
               new Paragraph({
                 spacing: { after: 100 },
-                children: [
-                  new TextRun({
-                    text: section.latin.text || '',
-                    size: 24
-                  })
-                ]
+                children: createTextRunsWithBreaks(section.latin.text || '')
               })
             ]
           }),
@@ -97,12 +112,7 @@ function createLiturgyDocument(data) {
             children: [
               new Paragraph({
                 spacing: { after: 100 },
-                children: [
-                  new TextRun({
-                    text: section.slovenian.text || '',
-                    size: 24
-                  })
-                ]
+                children: createTextRunsWithBreaks(section.slovenian.text || '')
               })
             ]
           })
